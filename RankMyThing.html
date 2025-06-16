@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RankMyThing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .hotel-item.dragging {
+            opacity: 0.5;
+            background: #f0f0f0;
+        }
+        .drop-indicator {
+            height: 2px;
+            background-color: #3b82f6;
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
+        
+        <div class="h-12 flex justify-end items-center mb-4">
+            <!-- Auth Container -->
+            <div id="authContainer" class="flex items-center">
+                <span id="userEmailDisplay" class="text-gray-700 mr-4 text-sm sm:text-base"></span>
+                <button id="signOutBtn" class="hidden bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 text-sm">Sign Out</button>
+            </div>
+        </div>
+
+        <header class="text-center mb-8">
+             <h1 class="text-4xl font-bold text-gray-900">RankMyThing</h1>
+             <p class="text-gray-600 mt-2">Your thoughts, perfectly ordered.</p>
+        </header>
+
+        <!-- Login / Register View -->
+        <div id="authView" class="bg-white p-8 rounded-lg shadow-md max-w-md mx-auto">
+            <!-- Login Form -->
+            <form id="loginForm">
+                <h2 class="text-2xl font-semibold mb-4 text-center text-gray-900">Login</h2>
+                <p class="text-gray-600 mb-6 text-center">Sign in to access your rankings.</p>
+                <div id="authError" class="text-red-500 mb-4 text-sm text-center h-5"></div>
+                <div class="space-y-4">
+                    <input type="email" id="loginEmail" placeholder="Email" class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" required>
+                    <input type="password" id="loginPassword" placeholder="Password" class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" required>
+                </div>
+                <button type="submit" class="w-full mt-6 py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Login</button>
+                <p class="mt-4 text-sm text-center">Don't have an account? <a href="#" id="showRegister" class="text-blue-600 hover:underline">Sign up</a></p>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-center text-gray-900">Create Account</h2>
+                <p class="text-gray-600 mb-6 text-center">Create an account to save your rankings.</p>
+                <div id="registerAuthError" class="text-red-500 mb-4 text-sm text-center h-5"></div>
+                <div class="space-y-4">
+                    <input type="email" id="registerEmail" placeholder="Email" class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" required>
+                    <input type="password" id="registerPassword" placeholder="Password (min. 6 characters)" class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" required>
+                </div>
+                <button type="submit" class="w-full mt-6 py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Sign Up</button>
+                <p class="mt-4 text-sm text-center">Already have an account? <a href="#" id="showLogin" class="text-blue-600 hover:underline">Login</a></p>
+            </form>
+        </div>
+        
+        <!-- Main Content -->
+        <main id="mainContent" class="hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900">Add a New Item</h2>
+                <form id="addHotelForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="hotelName" class="block text-sm font-medium text-gray-700">Item Name</label>
+                        <input type="text" id="hotelName" name="hotelName" class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" required>
+                    </div>
+                    <div>
+                        <label for="hotelLocation" class="block text-sm font-medium text-gray-700">Description</label>
+                        <input type="text" id="hotelLocation" name="hotelLocation" class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="addImageUrl" class="block text-sm font-medium text-gray-700">Image URL <span class="text-gray-400">(Optional)</span></label>
+                        <input type="url" id="addImageUrl" name="addImageUrl" class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="md:col-span-2 text-right">
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Add Item</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                 <h2 class="text-2xl font-semibold mb-4 text-gray-900">All Items</h2>
+                 <p class="text-gray-500 mb-4 text-sm">Drag an item from this list and drop it into the ranking section below.</p>
+                 <div id="allHotelsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900">Your Ranking</h2>
+                <div id="rankedHotelsList" class="space-y-4"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Edit Item</h3>
+            <form id="editHotelForm">
+                <input type="hidden" id="editHotelId">
+                <div class="space-y-4">
+                     <div>
+                        <label for="editHotelName" class="block text-sm font-medium text-gray-700">Item Name</label>
+                        <input type="text" id="editHotelName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label for="editHotelLocation" class="block text-sm font-medium text-gray-700">Description</label>
+                        <input type="text" id="editHotelLocation" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    <div>
+                        <label for="editHotelImageUrl" class="block text-sm font-medium text-gray-700">Image URL</label>
+                        <input type="url" id="editHotelImageUrl" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="https://example.com/image.jpg">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancelEditBtn" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, addDoc, deleteDoc, query, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyC3b8wgd-ggjaad5dIm5vQkqc2086hmgeQ",
+            authDomain: "european-trip-2025-ranker.firebaseapp.com",
+            projectId: "european-trip-2025-ranker",
+            storageBucket: "european-trip-2025-ranker.firebasestorage.app",
+            messagingSenderId: "491008190054",
+            appId: "1:491008190054:web:ab3885ae56f9e9400cafa7",
+            measurementId: "G-MDRP71069E"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        const authView = document.getElementById('authView');
+        const mainContent = document.getElementById('mainContent');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+        const authError = document.getElementById('authError');
+        const registerAuthError = document.getElementById('registerAuthError');
+        const signOutBtn = document.getElementById('signOutBtn');
+        const userEmailDisplay = document.getElementById('userEmailDisplay');
+        
+        let userId = null;
+        let hotelsCollectionRef;
+        let rankedHotelsCollectionRef;
+        let unsubscribeHotels = null;
+        let unsubscribeRanked = null;
+        let allHotels = new Map();
+        let rankedHotels = [];
+
+        // --- AUTH UI LOGIC ---
+        showRegister.onclick = (e) => {
+            e.preventDefault();
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            authError.textContent = '';
+        };
+
+        showLogin.onclick = (e) => {
+            e.preventDefault();
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            registerAuthError.textContent = '';
+        };
+        
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, loginForm.loginEmail.value, loginForm.loginPassword.value);
+            } catch (error) {
+                authError.textContent = 'Invalid email or password.';
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            registerAuthError.textContent = '';
+            try {
+                await createUserWithEmailAndPassword(auth, registerForm.registerEmail.value, registerForm.registerPassword.value);
+            } catch (error) {
+                registerAuthError.textContent = error.code === 'auth/email-already-in-use' ? 'This email is already registered.' : 'Failed to create account.';
+            }
+        });
+
+        signOutBtn.onclick = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                authView.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                signOutBtn.classList.remove('hidden');
+                userEmailDisplay.textContent = user.email;
+                setupCollections();
+                loadInitialData();
+            } else {
+                userId = null;
+                authView.classList.remove('hidden');
+                mainContent.classList.add('hidden');
+                signOutBtn.classList.add('hidden');
+                userEmailDisplay.textContent = '';
+                allHotels.clear();
+                rankedHotels = [];
+                if (unsubscribeHotels) unsubscribeHotels();
+                if (unsubscribeRanked) unsubscribeRanked();
+                renderAllHotels();
+                renderRankedHotels();
+            }
+        });
+        
+        function setupCollections() {
+            if (!userId) return;
+            hotelsCollectionRef = collection(db, `users/${userId}/items`);
+            rankedHotelsCollectionRef = collection(db, `users/${userId}/rankedItems`);
+        }
+
+        function loadInitialData() {
+            if (!userId) return;
+            if (unsubscribeHotels) unsubscribeHotels();
+            if (unsubscribeRanked) unsubscribeRanked();
+
+            unsubscribeHotels = onSnapshot(query(hotelsCollectionRef), (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const id = change.doc.id;
+                    if (change.type === "added" || change.type === "modified") allHotels.set(id, data);
+                    else if (change.type === "removed") allHotels.delete(id);
+                });
+                if (snapshot.empty) addDefaultItems();
+                renderAllHotels();
+                renderRankedHotels();
+            });
+            
+            unsubscribeRanked = onSnapshot(query(rankedHotelsCollectionRef), (snapshot) => {
+                 const docs = snapshot.docs.sort((a, b) => a.data().rank - b.data().rank);
+                 rankedHotels = docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                 renderRankedHotels();
+                 renderAllHotels();
+            });
+        }
+        
+        function renderAllHotels() {
+            const listElement = document.getElementById('allHotelsList');
+            listElement.innerHTML = '';
+            const rankedHotelIds = new Set(rankedHotels.map(h => h.hotelId));
+            allHotels.forEach((hotel, id) => {
+                if (!rankedHotelIds.has(id)) listElement.appendChild(createHotelCard(id, hotel, 'all'));
+            });
+        }
+
+        function renderRankedHotels() {
+            const listElement = document.getElementById('rankedHotelsList');
+            listElement.innerHTML = ''; 
+            if (rankedHotels.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = "text-center py-8 px-4 border-2 border-dashed border-gray-300 rounded-lg";
+                emptyMessage.innerHTML = `<p class="text-gray-500">Drag and drop items here to rank them.</p>`;
+                listElement.appendChild(emptyMessage);
+            } else {
+                rankedHotels.forEach((hotel, index) => {
+                    const hotelData = allHotels.get(hotel.hotelId);
+                    if (hotelData) listElement.appendChild(createHotelCard(hotel.hotelId, hotelData, 'ranked', hotel.id, index === 0));
+                });
+            }
+        }
+
+        function createHotelCard(hotelId, hotelData, type, rankedDocId = null, isTopRanked = false) {
+            const card = document.createElement('div');
+            card.dataset.id = hotelId;
+            card.draggable = true;
+            card.addEventListener('dragstart', handleDragStart);
+            const defaultImageUrl = `https://placehold.co/400x300/E2E8F0/A0AEC0?text=${encodeURIComponent(hotelData.name)}`;
+            const imageUrl = hotelData.imageUrl || defaultImageUrl;
+            const crown = isTopRanked ? '👑 ' : '';
+            const onErrorScript = `this.onerror=null;this.src='${defaultImageUrl}';`;
+            
+            if (type === 'ranked') {
+                 card.className = 'hotel-item bg-gray-50 p-4 rounded-lg shadow flex items-center space-x-4 cursor-move';
+                 card.dataset.rankedId = rankedDocId;
+                 card.innerHTML = `
+                    <img src="${imageUrl}" alt="${hotelData.name}" onerror="${onErrorScript}" class="w-20 h-20 rounded-md object-cover flex-shrink-0 bg-gray-300">
+                    <div class="flex-grow min-w-0">
+                        <h3 class="font-semibold text-lg truncate text-gray-900">${crown}${hotelData.name}</h3>
+                        <p class="text-gray-500 text-sm truncate">${hotelData.location || ''}</p>
+                    </div>
+                    <button data-ranked-id="${rankedDocId}" class="remove-ranked-btn text-red-500 hover:text-red-700 text-2xl font-bold p-1">&times;</button>
+                 `;
+            } else { 
+                 card.className = 'hotel-item bg-white rounded-lg shadow-md cursor-grab flex flex-col overflow-hidden';
+                 card.innerHTML = `
+                    <img src="${imageUrl}" alt="${hotelData.name}" onerror="${onErrorScript}" class="w-full h-32 object-cover bg-gray-300">
+                    <div class="p-4 flex-grow">
+                        <h3 class="font-semibold text-lg text-gray-900">${hotelData.name}</h3>
+                        <p class="text-gray-500 text-sm">${hotelData.location || ''}</p>
+                    </div>
+                    <div class="px-4 pb-4 flex justify-between items-center">
+                         <button data-id="${hotelId}" class="edit-all-btn text-sm text-blue-600 hover:underline font-medium">Edit</button>
+                         <button data-id="${hotelId}" class="delete-all-btn text-sm text-red-500 hover:underline font-medium">Remove</button>
+                    </div>
+                 `;
+            }
+            card.querySelector('.delete-all-btn')?.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (!confirm('Are you sure you want to permanently delete this item?')) return;
+                const idToDelete = e.currentTarget.dataset.id;
+                await deleteDoc(doc(hotelsCollectionRef, idToDelete));
+                const rankedItem = rankedHotels.find(h => h.hotelId === idToDelete);
+                if (rankedItem) await deleteDoc(doc(rankedHotelsCollectionRef, rankedItem.id));
+            });
+            card.querySelector('.edit-all-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEditModal(e.currentTarget.dataset.id);
+            });
+            card.querySelector('.remove-ranked-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteDoc(doc(rankedHotelsCollectionRef, e.currentTarget.dataset.rankedId));
+            });
+            return card;
+        }
+        
+        const editModal = document.getElementById('editModal');
+        const editHotelForm = document.getElementById('editHotelForm');
+        function openEditModal(hotelId) {
+            const data = allHotels.get(hotelId);
+            if (!data) return;
+            editHotelForm.editHotelId.value = hotelId;
+            editHotelForm.editHotelName.value = data.name;
+            editHotelForm.editHotelLocation.value = data.location || '';
+            editHotelForm.editHotelImageUrl.value = data.imageUrl || '';
+            editModal.classList.remove('hidden');
+        }
+        function closeEditModal() { editModal.classList.add('hidden'); }
+        editHotelForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const hotelId = editHotelForm.editHotelId.value;
+            if (hotelId && editHotelForm.editHotelName.value) {
+                await updateDoc(doc(hotelsCollectionRef, hotelId), { 
+                    name: editHotelForm.editHotelName.value,
+                    location: editHotelForm.editHotelLocation.value,
+                    imageUrl: editHotelForm.editHotelImageUrl.value
+                });
+                closeEditModal();
+            }
+        });
+        document.getElementById('cancelEditBtn').addEventListener('click', closeEditModal);
+
+        document.getElementById('addHotelForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            if (!userId || !form.hotelName.value) return;
+            await addDoc(hotelsCollectionRef, { 
+                name: form.hotelName.value, 
+                location: form.hotelLocation.value, 
+                imageUrl: form.addImageUrl.value 
+            });
+            form.reset();
+        });
+
+        async function addDefaultItems() {
+             const defaultItems = [
+                { name: 'My first great idea', location: 'This is a description', imageUrl: '' },
+                { name: 'Another brilliant thought', location: '', imageUrl: '' },
+                { name: 'A third, less-good idea', location: 'This one is okay', imageUrl: '' },
+             ];
+             for (const item of defaultItems) await addDoc(hotelsCollectionRef, item);
+        }
+
+        let draggedItem = null, dropIndicator = null;
+        function handleDragStart(e) {
+            draggedItem = e.target.closest('.hotel-item');
+            setTimeout(() => draggedItem.classList.add('dragging'), 0);
+            dropIndicator = document.createElement('div');
+            dropIndicator.className = 'drop-indicator';
+        }
+        const rankedList = document.getElementById('rankedHotelsList');
+        rankedList.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!draggedItem) return;
+            const overElement = e.target.closest('.hotel-item');
+            if (overElement && overElement !== draggedItem) {
+                const rect = overElement.getBoundingClientRect();
+                if (e.clientY > rect.top + rect.height / 2) overElement.after(dropIndicator);
+                else overElement.before(dropIndicator);
+            } else if (!rankedList.querySelector('.hotel-item')) {
+                 rankedList.prepend(dropIndicator);
+            }
+        });
+        rankedList.addEventListener('dragleave', (e) => {
+            if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return;
+            if (dropIndicator?.parentNode) dropIndicator.remove();
+        });
+        rankedList.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            if (!draggedItem || !dropIndicator.parentNode) return;
+            dropIndicator.parentNode.replaceChild(draggedItem, dropIndicator);
+            draggedItem.classList.remove('dragging');
+            await updateRanks();
+            draggedItem = null;
+        });
+        rankedList.addEventListener('dragend', () => {
+             if (draggedItem) draggedItem.classList.remove('dragging');
+             if (dropIndicator?.parentNode) dropIndicator.remove();
+             draggedItem = null;
+             renderAllHotels();
+             renderRankedHotels();
+        });
+
+        async function updateRanks() {
+            if (!userId) return;
+            const rankedElements = [...document.getElementById('rankedHotelsList').querySelectorAll('.hotel-item')];
+            const promises = rankedElements.map((element, i) => {
+                const hotelId = element.dataset.id;
+                const docId = element.dataset.rankedId || crypto.randomUUID(); 
+                return setDoc(doc(rankedHotelsCollectionRef, docId), { hotelId: hotelId, rank: i });
+            });
+            const newRankedIds = new Set(rankedElements.map(el => el.dataset.rankedId).filter(Boolean));
+            for (const oldRanked of rankedHotels) {
+                if (!newRankedIds.has(oldRanked.id)) {
+                    promises.push(deleteDoc(doc(rankedHotelsCollectionRef, oldRanked.id)));
+                }
+            }
+            await Promise.all(promises);
+        }
+    </script>
+</body>
+</html>
